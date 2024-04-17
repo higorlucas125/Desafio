@@ -1,0 +1,98 @@
+services:
+  wiremock:
+    image: rodolpheche/wiremock:2.30.1
+    ports:
+      - "9090:8080"
+    environment:
+      - KEYCLOAK_URL=http://keycloak:8080/realms/higorlucas
+      - CLIENT_ID=gateway
+      - CLIENT_SECRET=1bGZWIyBkRx6eO5PbzSjbFWyRa2z7N6h
+    volumes:
+      - ./wiremock/mappings:/home/wiremock/mappings
+    networks:
+      - desafio_itau
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:22.0.5
+    environment:
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    command:
+      [ "start-dev", "--import-realm" ]
+
+
+  ApiTranferencia:
+    image: api-transferencia:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9091:9091"
+    volumes:
+      - ./src:/c/src
+    depends_on:
+        - keycloak
+    networks:
+      - desafio_itau
+
+#  Elasticsearch:
+#    image: elasticsearch:7.16.2
+#    container_name: elasticsearch
+#    restart: always
+#    volumes:
+#      - esdata:/usr/share/elasticsearch/data/
+#    environment:
+#      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+#      discovery.type: single-node
+#    ports:
+#      - '9200:9200'
+#      - '9300:9300'
+#    networks:
+#      - desafio_itau
+#
+#  Logstash:
+#    image: logstash:7.16.2
+#    container_name: logstash
+#    restart: always
+#    volumes:
+#      - ./logstash/:/logstash_dir
+#    command: logstash -f /logstash_dir/logstash.conf
+#    depends_on:
+#      - Elasticsearch
+#    ports:
+#      - '9600:9600'
+#    environment:
+#      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+#    networks:
+#      - desafio_itau
+#
+#  Kibana:
+#    image: kibana:7.16.2
+#    container_name: kibana
+#    restart: always
+#    ports:
+#      - '5601:5601'
+#    environment:
+#      - ELASTICSEARCH_URL=http://elasticsearch:9200
+#    depends_on:
+#      - Elasticsearch
+#    networks:
+#      - desafio_itau
+#
+#volumes:
+#    esdata:
+#      driver: local
+
+networks:
+  desafio_itau:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 182.18.0.0/16
