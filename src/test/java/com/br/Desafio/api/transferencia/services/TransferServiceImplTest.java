@@ -69,7 +69,7 @@ public class TransferServiceImplTest {
     @Test
     public void notifyBance_whenTransferIsSuccess() throws TransferException {
 
-        TransferRequestDTO transferRequestDTO = new TransferRequestDTO("123", 456, new AccountClient());
+        TransferRequestDTO transferRequestDTO = new TransferRequestDTO("123", 456, new TransferRequestDTO.Conta("123","234") );
 
         mockEndpointBacen();
 
@@ -96,11 +96,24 @@ public class TransferServiceImplTest {
                         .withHeader("Content-Type", "application/json")
                         .withBody(gson.toJson(getClientDto()))));
 
+        wireMockServer.stubFor(WireMock.get(WireMock.urlEqualTo("/clientes/234"))
+            .willReturn(WireMock.aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody(gson.toJson(getClientDto()))));
+
+
         wireMockServer.stubFor(WireMock.get(WireMock.urlEqualTo("/contas/123"))
                 .willReturn(WireMock.aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(gson.toJson(getContaDto()))));
+
+        wireMockServer.stubFor(WireMock.get(WireMock.urlEqualTo("/contas/234"))
+            .willReturn(WireMock.aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody(gson.toJson(getContaDto()))));
     }
 
     private ClienteResponseDTO getClientDto (){

@@ -16,6 +16,12 @@ public class TransferRequestDTO {
     public static class Conta {
         private String idOrigem;
         private String idDestino;
+
+        public Conta( String idOrigem, String idDestino ) {
+
+            this.idOrigem = idOrigem;
+            this.idDestino = idDestino;
+        }
     }
 
     public TransferRequestDTO(String idCliente, double valor, Conta conta) {

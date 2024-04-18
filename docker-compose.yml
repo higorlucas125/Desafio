@@ -9,11 +9,11 @@ services:
       - CLIENT_SECRET=1bGZWIyBkRx6eO5PbzSjbFWyRa2z7N6h
     volumes:
       - ./wiremock/mappings:/home/wiremock/mappings
-    networks:
-      - desafio_itau
 
   keycloak:
     image: quay.io/keycloak/keycloak:22.0.5
+    container_name: stepup-keycloak
+    hostname: stepup-keycloak
     environment:
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: admin
@@ -22,24 +22,35 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ../keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./keycloak/config:/opt/keycloak/data/import
     command:
       [ "start-dev", "--import-realm" ]
+#    networks:
+#      - keycloak-net
 
 
-  ApiTranferencia:
-    image: api-transferencia:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "9091:9091"
-    volumes:
-      - ./src:/c/src
-    depends_on:
-        - keycloak
-    networks:
-      - desafio_itau
+#  ApiTransferencia:
+#    image: api-transferencia:latest
+#    container_name: stepup-backend
+#    hostname: stepup-backend
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    ports:
+#      - "9091:9091"
+#    environment:
+#      - ISSUER_URI=http://stepup-keycloak:8080/realms/higorlucas
+#    volumes:
+#      - ./src:/c/src
+#      - ./wait-for-keycloak.sh:/c/wait-for-keycloak.sh
+#    depends_on:
+#      - keycloak
+#    networks:
+#      - keycloak-net
+#    command: [ "./wait-for-keycloak.sh", "keycloak","8080", "java", "-jar", "app.jar", "--spring.profiles.active=docker" ]
+
+
+
 
 #  Elasticsearch:
 #    image: elasticsearch:7.16.2
@@ -89,10 +100,13 @@ services:
 #    esdata:
 #      driver: local
 
-networks:
-  desafio_itau:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 182.18.0.0/16
+#networks:
+#  desafio_itau:
+#    driver: bridge
+#    ipam:
+#      driver: default
+#      config:
+#        - subnet: 182.18.0.0/16
+
+#networks:
+#  keycloak-net: { }
