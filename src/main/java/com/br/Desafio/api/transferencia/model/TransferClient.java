@@ -49,7 +49,7 @@ public class TransferClient {
     @JoinColumn(name = "account_client_id", referencedColumnName = "id")
     private AccountClient accountClient;
 
-    public TransferClient getTransfer(TransferRequestDTO transferRequestDTO) {
+    public static TransferClient getTransfer(TransferRequestDTO transferRequestDTO) {
         return new TransferClient(transferRequestDTO.getIdCliente(), transferRequestDTO.getValor());
     }
 

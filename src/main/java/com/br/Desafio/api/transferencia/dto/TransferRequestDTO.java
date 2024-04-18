@@ -17,17 +17,16 @@ public class TransferRequestDTO {
         private String idOrigem;
         private String idDestino;
 
-        public Conta( String idOrigem, String idDestino ) {
-
-            this.idOrigem = idOrigem;
-            this.idDestino = idDestino;
-        }
+//        public Conta( String idOrigem, String idDestino ) {
+//            this.idOrigem = idOrigem;
+//            this.idDestino = idDestino;
+//        }
     }
 
-    public TransferRequestDTO(String idCliente, double valor, Conta conta) {
-        this.idCliente = idCliente;
-        this.valor = valor;
-        this.conta = conta;
-    }
+//    public TransferRequestDTO(String idCliente, double valor, Conta conta) {
+//        this.idCliente = idCliente;
+//        this.valor = valor;
+//        this.conta = conta;
+//    }
 
 }

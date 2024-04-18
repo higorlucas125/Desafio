@@ -8,11 +8,15 @@ import com.br.Desafio.api.transferencia.repository.TransferClientRepository;
 import com.br.Desafio.api.transferencia.services.exception.TransferException;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -34,27 +38,27 @@ public class TransferServiceImpl implements TransferService {
     @Transactional(rollbackFor = TransferException.class)
     public void save(TransferRequestDTO transferRequestDTO) throws TransferException {
         ClienteResponseDTO clientOrigin = checkIfYouCanReceiveTransfer(transferRequestDTO.getIdCliente());
-        ClienteResponseDTO clientDestiny = checkIfYouCanReceiveTransfer(transferRequestDTO.getConta().getIdDestino());
 
-        ContaResponseDTO contaOrigin = getAccount(transferRequestDTO.getIdCliente());
+        ContaResponseDTO contaOrigin = getAccount(transferRequestDTO.getConta().getIdOrigem());
         ContaResponseDTO contaDestiny = getAccount(transferRequestDTO.getConta().getIdDestino());
 
-        if(Objects.nonNull(clientDestiny) && Objects.nonNull(clientOrigin) && isActivation(contaOrigin) && isActivation(contaDestiny)) {
-            if (validateBalanceLimit(contaOrigin, transferRequestDTO.getValor())) {
-                    TransferClient transferClient = new TransferClient();
-                    transferClient.getTransfer(transferRequestDTO);
+        if( Objects.nonNull(clientOrigin) && isActivation(contaOrigin) && isActivation(contaDestiny)) {
+            if ( validateBalanceLimit( contaOrigin, transferRequestDTO.getValor() ) ) {
+                TransferClient transferClient = TransferClient.getTransfer( transferRequestDTO );
 
-                    // deve atulizar a conta, caso de rollback tenho que volta tudo como era antes.
-                    transferClientRepository.save(transferClient);
-                    try {
-                        notifyBacen();
-                    } catch (Exception e) {
-                        throw new TransferException("Erro ao notificar o BACEN");
-                    }
-                } else {
-                    throw new TransferException("Transferência não autorizada");
+                // deve atulizar a conta, caso de rollback tenho que volta tudo como era antes.
+                transferClientRepository.save( transferClient );
+                try {
+                    notifyBacen();
+                } catch ( Exception e ) {
+                    throw new TransferException( "Erro ao notificar o BACEN" );
                 }
+            } else {
+                throw new TransferException( "Transferência não autorizada" );
             }
+        } else {
+            throw new TransferException( "Não foi possivel fazer a transferencia, conta inexistente " );
+        }
     }
 
 
@@ -67,7 +71,7 @@ public class TransferServiceImpl implements TransferService {
 
     ClienteResponseDTO checkIfYouCanReceiveTransfer(String  idClient) {
         Flux<ClienteResponseDTO> clienteResponseDTOFlux = getDataFromApi(idClient);
-        return clienteResponseDTOFlux.blockFirst();
+        return clienteResponseDTOFlux.onErrorReturn( new ClienteResponseDTO()).blockFirst();
     }
 
     //Após a transferência é necessário notificar o BACEN de forma síncrona que a transação
@@ -113,16 +117,30 @@ public class TransferServiceImpl implements TransferService {
         return webClient.get()
                 .uri(apiUrl -> apiUrl.path("/contas/{id}").build(idConta))
                 .retrieve()
-                .bodyToFlux(ContaResponseDTO.class);
+                .bodyToFlux(ContaResponseDTO.class)
+                .onErrorResume( WebClientResponseException.class, error -> {
+                    if (error.getStatusCode() == HttpStatus.NOT_FOUND) {
+                        return Flux.empty();
+                    } else {
+                        // Se for outro tipo de erro, lança a exceção novamente
+                        return Flux.error(error);
+                    }});
     }
 
 
     //TODO criar a classe que quero retornar
-    public Flux<ClienteResponseDTO> getDataFromApi(String id) {
+    public Flux< ClienteResponseDTO > getDataFromApi( String id ) {
 
         return webClient.get()
-                .uri(apiUrl -> apiUrl.path("/clientes/{id}").build(id))
-                .retrieve()
-                .bodyToFlux(ClienteResponseDTO.class);
+            .uri( apiUrl -> apiUrl.path( "/clientes/{id}" )
+                .build( id ) )
+            .retrieve()
+            .bodyToFlux( ClienteResponseDTO.class ).onErrorResume( WebClientResponseException.class, error -> {
+                if (error.getStatusCode() == HttpStatus.NOT_FOUND) {
+                    return Flux.empty();
+                } else {
+                    // Se for outro tipo de erro, lança a exceção novamente
+                    return Flux.error(error);
+                }});
     }
 }

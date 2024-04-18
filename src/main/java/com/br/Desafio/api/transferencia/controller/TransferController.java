@@ -25,6 +25,15 @@ public class TransferController {
     @Autowired
     TransferService transferService;
 
+    @GetMapping("/novo")
+    public ResponseEntity<String> healthCheck() {
+        return ResponseEntity.ok().body( "API is running");
+    }
+
+    @PostMapping("/Testando")
+    public ResponseEntity<String> Testando() {
+        return ResponseEntity.ok().body( "Testando");
+    }
 
     @PostMapping("/transfer")
     public ResponseEntity<String> effectTransfer (@RequestBody TransferRequestDTO transferRequestDTO) {
@@ -35,7 +44,7 @@ public class TransferController {
             return ResponseEntity.ok().build();
         } catch ( TransferException e) {
             logger.error(e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 }
